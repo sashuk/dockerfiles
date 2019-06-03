@@ -4,8 +4,11 @@ MAINTAINER Martin Høgh<mh@mapcentia.com>
 RUN export DEBIAN_FRONTEND=noninteractive
 ENV DEBIAN_FRONTEND noninteractive
 
-# Install MapServer 7.2.1 from source
-RUN git clone https://github.com/mapserver/mapserver.git --branch branch-7-2 &&\
+# Set php session timeout to one day
+RUN sed -i "s/session.gc_maxlifetime = 1440/session.gc_maxlifetime = 86400/g" /etc/php/7.0/fpm/php.ini
+
+# Install MapServer 7.4 from source
+RUN git clone https://github.com/mapserver/mapserver.git --branch branch-7-4 &&\
     cd mapserver &&\
     mkdir build &&\
     cd build &&\
@@ -48,6 +51,13 @@ RUN cd /var/www/ &&\
 RUN	cd /var/www/geocloud2 &&\
 	npm install &&\
 	grunt production --force
+
+# Install dashboard app
+RUN	mkdir -p /var/www/geocloud2/public/dashboard && mkdir /dashboardtmp && cd /dashboardtmp &&\
+    git clone http://github.com/mapcentia/dashboard.git && cd /dashboardtmp/dashboard &&\
+    npm install && cp ./app/config.js.sample ./app/config.js && cp ./.env.production ./.env &&\
+    npm run build && cp -R ./build/* /var/www/geocloud2/public/dashboard/ &&\
+    rm -R /dashboardtmp
 
 # Add the custom config files from the Docker repo.
 ADD conf/gc2/App.php /var/www/geocloud2/app/conf/
